@@ -52,7 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full bg-background text-foreground">
         <ThemeProvider>
           <TooltipProvider delayDuration={250}>
-            <div className="flex min-h-dvh flex-col">
+            <div className="flex min-h-dvh flex-col max-lg:[&:has([data-citewise])]:h-dvh max-lg:[&:has([data-citewise])]:max-h-dvh max-lg:[&:has([data-citewise])]:overflow-hidden">
               <SiteHeader />
               {children}
               <SiteFooter />

@@ -200,7 +200,7 @@ function KeywordList({ chunks, compact = false }: { chunks: Chunk[]; compact?: b
   return (
     <ul className="mt-2 grid gap-2">
       {chunks.slice(0, 8).map((chunk) => (
-        <li key={chunk.id} className="rounded-md bg-muted px-2 py-1.5 text-sm">
+        <li key={chunk.id} className="min-w-0 rounded-md bg-muted px-2 py-1.5 text-sm">
           <ChunkLabel chunk={chunk} />
           <p className="mt-1 line-clamp-3 break-words font-serif leading-snug [overflow-wrap:anywhere]">{chunk.text}</p>
         </li>
@@ -272,7 +272,7 @@ function SemanticRow({
       id={`chunk-${hit.chunk.id}`}
       data-testid={lead ? "semantic-top" : undefined}
       className={cn(
-        "scroll-mt-3 rounded-lg border border-border bg-card p-2",
+        "min-w-0 scroll-mt-3 rounded-lg border border-border bg-card p-2",
         cited && "border-l-4 border-l-[#FDE68A]",
         highlighted && "ring-2 ring-primary",
         muted && "opacity-70",

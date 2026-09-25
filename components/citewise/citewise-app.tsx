@@ -420,7 +420,7 @@ export function CitewiseApp({ initialStatus }: { initialStatus: PublicStatus }) 
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <div className="flex shrink-0 flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-end sm:justify-between sm:px-6">
+      <div className="flex shrink-0 flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-end sm:justify-between sm:px-6 max-lg:max-h-[38dvh] max-lg:overflow-y-auto">
         <div className="min-w-0">
           <h1 className="font-serif text-3xl tracking-tight sm:text-4xl">Citewise</h1>
           <p className="mt-1 max-w-xl text-sm text-muted-foreground sm:text-base">
@@ -460,8 +460,8 @@ export function CitewiseApp({ initialStatus }: { initialStatus: PublicStatus }) 
         </TabsList>
       </Tabs>
 
-      <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 grid-cols-[minmax(0,1fr)] lg:grid-cols-[280px_minmax(0,1fr)_360px]">
-        <div className={mobileTab === "document" ? "min-h-0 min-w-0 lg:block" : "hidden min-h-0 min-w-0 lg:block"}>
+      <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 grid-cols-[minmax(0,1fr)] max-lg:grid-rows-[minmax(0,1fr)] max-lg:overflow-hidden lg:grid-cols-[280px_minmax(0,1fr)_360px]">
+        <div className={mobileTab === "document" ? "min-h-0 min-w-0 max-lg:h-full max-lg:overflow-hidden lg:block" : "hidden min-h-0 min-w-0 max-lg:h-full max-lg:overflow-hidden lg:block"}>
           <DocumentPane
             active={
               doc
@@ -517,7 +517,7 @@ export function CitewiseApp({ initialStatus }: { initialStatus: PublicStatus }) 
             }}
           />
         </div>
-        <div className={mobileTab === "chat" ? "min-h-0 min-w-0 border-border lg:block lg:border-x" : "hidden min-h-0 min-w-0 lg:block lg:border-x"}>
+        <div className={mobileTab === "chat" ? "min-h-0 min-w-0 max-lg:h-full max-lg:overflow-hidden border-border lg:block lg:border-x" : "hidden min-h-0 min-w-0 max-lg:h-full max-lg:overflow-hidden lg:block lg:border-x"}>
           <ChatPane
             messages={chat.messages}
             status={chat.status}
@@ -556,7 +556,7 @@ export function CitewiseApp({ initialStatus }: { initialStatus: PublicStatus }) 
             }}
           />
         </div>
-        <div className={mobileTab === "sources" ? "min-h-0 min-w-0 lg:block" : "hidden min-h-0 min-w-0 lg:block"}>
+        <div className={mobileTab === "sources" ? "min-h-0 min-w-0 max-lg:h-full max-lg:overflow-hidden lg:block" : "hidden min-h-0 min-w-0 max-lg:h-full max-lg:overflow-hidden lg:block"}>
           <RetrievalPanel
             panel={panel}
             mode={mode}
