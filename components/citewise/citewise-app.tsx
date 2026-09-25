@@ -20,6 +20,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { defaultThreshold, type PublicStatus } from "@/lib/ai/config"
 import { textFromUnknownMessage } from "@/lib/ai/messages"
+import { messageFromChatResponse, presentChatError } from "@/lib/ai/model-error"
 import { parseCitationNumbers } from "@/lib/citations"
 import { embedWithBrowser, ensureBrowserModel, onEmbedEvent } from "@/lib/client/browser-embed"
 import { readSampleSession, writeSessionIndex } from "@/lib/client/session-index"
@@ -55,6 +56,7 @@ export function CitewiseApp({ initialStatus }: { initialStatus: PublicStatus }) 
   const [confirmOpen, setConfirmOpen] = useState(false)
   const pendingAction = useRef<(() => void) | null>(null)
   const queryVectorRef = useRef<number[] | null>(null)
+  const chatFailedRef = useRef(false)
   const latestRef = useRef({
     context: [] as ContextPassage[],
     doc: null as ActiveDocument | null,
@@ -75,14 +77,13 @@ export function CitewiseApp({ initialStatus }: { initialStatus: PublicStatus }) 
         fetch: async (input, init) => {
           const response = await globalThis.fetch(input, init)
           if (!response.ok) {
-            let message = "The request failed."
+            let payload: unknown = null
             try {
-              const payload = (await response.json()) as { message?: string }
-              if (payload.message) message = payload.message
+              payload = await response.json()
             } catch {
               // The status line is enough.
             }
-            throw new Error(message)
+            throw new Error(messageFromChatResponse(response.status, payload))
           }
           return response
         },
@@ -91,6 +92,10 @@ export function CitewiseApp({ initialStatus }: { initialStatus: PublicStatus }) 
 
   const chat = useChat({
     transport,
+    onError: (error) => {
+      chatFailedRef.current = true
+      toast.error(presentChatError(error.message) ?? error.message)
+    },
     onFinish: ({ message, isError, isAbort }) => {
       const saved = latestRef.current.pending
       if (!saved || isError || isAbort) return
@@ -352,11 +357,11 @@ export function CitewiseApp({ initialStatus }: { initialStatus: PublicStatus }) 
     setRetrievals((current) => ({ ...current, [assistant.id]: saved }))
   }
 
-  async function ask(question: string, options?: { compare?: boolean }) {
+  async function ask(question: string, options?: { compare?: boolean }): Promise<boolean> {
     if (!latestRef.current.doc) {
       setError("Choose a document first.")
       setMobileTab("document")
-      return
+      return false
     }
     setError(null)
     try {
@@ -367,11 +372,11 @@ export function CitewiseApp({ initialStatus }: { initialStatus: PublicStatus }) 
         : saved.semantic.filter((hit) => hit.score >= saved.threshold)
       if (passages.length === 0) {
         applyLocalAnswer(question, NOT_FOUND_ANSWER, { ...saved, semantic: saved.semantic })
-        return
+        return true
       }
       if (!status.chatEnabled) {
         if (!options?.compare) setMobileTab("sources")
-        return
+        return true
       }
       latestRef.current.context = passages.map((hit, index) => ({
         n: index + 1,
@@ -381,13 +386,17 @@ export function CitewiseApp({ initialStatus }: { initialStatus: PublicStatus }) 
         docName: latestRef.current.doc?.name ?? "Document",
       }))
       latestRef.current.pending = saved
+      chatFailedRef.current = false
       await chat.sendMessage({ text: question })
       setMobileTab("chat")
+      return !chatFailedRef.current
     } catch (caught) {
       setProgress({ phase: "idle", modelPercent: null, embedDone: 0, embedTotal: 0 })
-      const message = caught instanceof Error ? caught.message : "Something went wrong."
+      const message =
+        presentChatError(caught instanceof Error ? caught.message : "Something went wrong.") ?? "Something went wrong."
       setError(message)
       toast.error(message)
+      return false
     }
   }
 
@@ -410,7 +419,7 @@ export function CitewiseApp({ initialStatus }: { initialStatus: PublicStatus }) 
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex shrink-0 flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-end sm:justify-between sm:px-6">
         <div className="min-w-0">
           <h1 className="font-serif text-3xl tracking-tight sm:text-4xl">Citewise</h1>
@@ -451,8 +460,8 @@ export function CitewiseApp({ initialStatus }: { initialStatus: PublicStatus }) 
         </TabsList>
       </Tabs>
 
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[280px_minmax(0,1fr)_360px]">
-        <div className={mobileTab === "document" ? "min-h-0 lg:block" : "hidden min-h-0 lg:block"}>
+      <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 grid-cols-[minmax(0,1fr)] lg:grid-cols-[280px_minmax(0,1fr)_360px]">
+        <div className={mobileTab === "document" ? "min-h-0 min-w-0 lg:block" : "hidden min-h-0 min-w-0 lg:block"}>
           <DocumentPane
             active={
               doc
@@ -508,16 +517,21 @@ export function CitewiseApp({ initialStatus }: { initialStatus: PublicStatus }) 
             }}
           />
         </div>
-        <div className={mobileTab === "chat" ? "min-h-0 border-border lg:block lg:border-x" : "hidden min-h-0 lg:block lg:border-x"}>
+        <div className={mobileTab === "chat" ? "min-h-0 min-w-0 border-border lg:block lg:border-x" : "hidden min-h-0 min-w-0 lg:block lg:border-x"}>
           <ChatPane
             messages={chat.messages}
             status={chat.status}
             chatEnabled={status.chatEnabled}
-            error={chat.error?.message ?? null}
+            error={presentChatError(chat.error?.message)}
             retrievals={retrievals}
-            onSubmit={(question) => {
-              void ask(question)
-            }}
+            onSubmit={(question) => ask(question)}
+            onRetry={
+              chat.messages.some((message) => message.role === "user")
+                ? () => {
+                    void chat.regenerate()
+                  }
+                : undefined
+            }
             onStop={() => chat.stop()}
             onNew={() => {
               chat.stop()
@@ -542,7 +556,7 @@ export function CitewiseApp({ initialStatus }: { initialStatus: PublicStatus }) 
             }}
           />
         </div>
-        <div className={mobileTab === "sources" ? "min-h-0 lg:block" : "hidden min-h-0 lg:block"}>
+        <div className={mobileTab === "sources" ? "min-h-0 min-w-0 lg:block" : "hidden min-h-0 min-w-0 lg:block"}>
           <RetrievalPanel
             panel={panel}
             mode={mode}
