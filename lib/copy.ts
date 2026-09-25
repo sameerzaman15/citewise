@@ -6,6 +6,8 @@ export const NOT_FOUND_ANSWER = "I couldn't find that in this document."
 export const INVALID_KEY_MESSAGE =
   "The configured AI key was rejected. Check the key in your environment variables."
 
+export const DEMO_BUSY_MESSAGE = "The demo is busy right now. Please try again in a few seconds."
+
 export const PRIVACY_NOTE =
   "Files are processed in memory for this session and not stored. Don't upload confidential documents."
 

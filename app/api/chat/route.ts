@@ -1,6 +1,8 @@
 import { APICallError, createUIMessageStream, createUIMessageStreamResponse, streamText, toUIMessageStream } from "ai"
 import { z } from "zod"
-import { INVALID_KEY_MESSAGE, MAX_OUTPUT_TOKENS, NO_KEY_BANNER, NOT_FOUND_ANSWER } from "@/lib/copy"
+import { createCitationNormalizer } from "@/lib/citations"
+import { MAX_OUTPUT_TOKENS, NO_KEY_BANNER, NOT_FOUND_ANSWER } from "@/lib/copy"
+import { messageForModelError, isProviderRateLimit } from "@/lib/ai/model-error"
 import { buildInstructions, capContext, capHistory, textFromUnknownMessage } from "@/lib/ai/messages"
 import { chatProviderOptions, getChatModel, getPublicStatus } from "@/lib/ai/providers"
 import { enforceRateLimit } from "@/lib/rate-limit"
@@ -91,29 +93,52 @@ export async function POST(request: Request) {
       maxRetries: 0,
       abortSignal: request.signal,
       providerOptions: chatProviderOptions(),
+      experimental_transform: citationStreamTransform as never,
     })
 
     return createUIMessageStreamResponse({
       stream: toUIMessageStream({
         stream: result.stream,
-        onError: (error) => {
-          if (APICallError.isInstance(error) && error.statusCode === 401) {
-            return INVALID_KEY_MESSAGE
-          }
-          return "The model could not answer just now. Try again in a moment."
-        },
+        onError: (error) => messageForModelError(error),
       }),
     })
   } catch (error) {
+    const message = messageForModelError(error)
     if (APICallError.isInstance(error) && error.statusCode === 401) {
-      return Response.json({ code: "INVALID_API_KEY", message: INVALID_KEY_MESSAGE }, { status: 401 })
+      return Response.json({ code: "INVALID_API_KEY", message }, { status: 401 })
+    }
+    if (isProviderRateLimit(error)) {
+      return Response.json({ code: "PROVIDER_RATE_LIMIT", message }, { status: 429 })
     }
     console.error("chat failed", error)
     return Response.json(
-      { code: "CHAT_FAILED", message: "The model could not answer just now. Try again in a moment." },
+      { code: "CHAT_FAILED", message },
       { status: 502 },
     )
   }
+}
+
+function citationStreamTransform() {
+  const normalizer = createCitationNormalizer()
+  return new TransformStream({
+    transform(part: { type?: string; id?: string; text?: string }, controller) {
+      if (part.type === "text-delta" && typeof part.text === "string") {
+        const text = normalizer.push(part.text)
+        if (text.length > 0) controller.enqueue({ ...part, text })
+        return
+      }
+      if (part.type === "text-end") {
+        const rest = normalizer.flush()
+        if (rest.length > 0)
+          controller.enqueue({
+            type: "text-delta",
+            id: part.id ?? "citation",
+            text: rest,
+          })
+      }
+      controller.enqueue(part)
+    },
+  })
 }
 
 function staticAnswer(text: string): Response {
