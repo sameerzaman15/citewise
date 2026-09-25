@@ -1,0 +1,51 @@
+# Tidewatch help center
+
+Tidewatch is a fictional uptime monitor for small software teams. It checks whether your site answers, tells you when it does not, and hosts a status page your customers can read. This help center is sample text for a portfolio demo. The company is not real.
+
+## Monitors
+
+A monitor is one check against one address. Open Monitors, choose Add monitor, and paste an https address. Give it a name a teammate will recognize at 2 in the morning, such as "Checkout API" rather than "test 3."
+
+Pick an interval. One minute is the default for a paid workspace. Five minutes is enough for a brochure site. Tidewatch sends a simple request and records the status code, the time to first byte, and whether the TLS certificate is inside 14 days of expiry.
+
+You can add a keyword check. Tidewatch then fails the check if the response does not contain a phrase you choose, such as the product name in the footer. Use this when a page returns 200 but the body is an error template.
+
+Regions: a monitor can run from one region or from three. Three regions reduce false alarms when a single network path is sulking. The monitor is down only when at least two regions fail the same check.
+
+Pause a monitor when you are shipping a migration. Paused monitors do not alert and do not paint the status page red. Remember to resume. A Monday digest lists anything that has been paused for more than three days.
+
+## Alerts
+
+An alert is the message Tidewatch sends when a monitor changes state. Create a policy under Alerts. Choose the monitors it covers, the channel, and how long a failure must last before the first message. Two failed checks in a row is the default, so a single blip stays quiet.
+
+Channels are email, a webhook, and a chat integration you configure with a URL we give you. The message includes the monitor name, the status code, the region that failed, and a link to the check. It does not include response bodies, because those can carry customer data.
+
+Recovery messages are on by default. If you turn them off, you will still see the recovery on the status page and in the incident log. On-call rotations are a list of emails with a weekly handoff. Tidewatch writes to the person at the top of the list, then the next person if the first does not acknowledge within 15 minutes.
+
+Quiet hours mute chat alerts but still send email. Use them for a brochure site, not for a payment API. Maintenance windows suppress alerts for a monitor between two times you set. The status page shows a scheduled note if you tick that box.
+
+If alerts never arrive, check three things: the policy is attached to the monitor, the address is confirmed, and the monitor is not paused. The delivery log on the alert policy shows the last ten attempts and the error from the far end.
+
+## Status pages
+
+A status page is the public view of selected monitors. Create one under Status pages, pick a subdomain on tidewatch.example, and choose which monitors subscribers can see. You can hide internal tools and still alert on them.
+
+Components are the rows customers read: Website, API, Dashboard. Map each component to one or more monitors. The component is degraded when any mapped monitor is slow, and it is down when any mapped monitor is down. You can override that rule per component if a secondary monitor should not paint the row red.
+
+Write incidents in plain language. Say what failed, what you are doing, and when you will update. An update every 30 minutes during an open incident is the habit we recommend, even if the update is "still looking." Customers forgive a short note. They do not forgive silence.
+
+Subscribers can follow a page by email. You approve the list. A status page can require a password if the audience is a private beta. The password is shared by you. Tidewatch does not create accounts for your customers in this help center's scope.
+
+Custom domains are a CNAME to the target shown on the page settings. TLS is issued after the record is visible. Until then the tidewatch.example host keeps working, so you can share it while DNS settles.
+
+## Billing
+
+Tidewatch bills the workspace, not each teammate. The monthly invoice lists monitors, status pages, and SMS alerts if you enabled them. Email alerts are included. Chat webhooks are included. SMS is metered and shown as a line item before you turn it on.
+
+Change plan under Billing. Downgrades apply at the next renewal. If you are over the monitor cap on the lower plan, you will be asked to pause monitors before the change is saved. Upgrades apply immediately, and the invoice is prorated.
+
+Payment is by card. A failed charge retries for four days and then pauses alerts, not monitors. The status page keeps its last public state and shows a small banner to admins only. Update the card under Billing to resume alerts. We send the receipt to the billing email, which can differ from the owner email.
+
+Cancel anytime. The workspace stays readable until the end of the paid period. After that, monitors stop and the status page returns a simple closed notice. Export the incident history as CSV before the period ends if you need it for a review.
+
+Taxes are calculated from the billing address. If a finance tool needs a purchase order number on the invoice, add it under Billing details. The next invoice will show it. We do not renegotiate a fictional price list inside this demo document.
