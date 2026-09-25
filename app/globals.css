@@ -134,6 +134,14 @@
   }
 }
 
+@media (max-width: 1023px) {
+  html:has([data-citewise]),
+  body:has([data-citewise]) {
+    height: 100dvh;
+    overflow: hidden;
+  }
+}
+
 .streaming-caret::after {
   content: "";
   display: inline-block;

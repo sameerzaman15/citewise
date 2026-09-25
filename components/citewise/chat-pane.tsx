@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Copy, Square } from "lucide-react"
 import { toast } from "sonner"
 import { AnswerMarkdown } from "@/components/citewise/answer-markdown"
@@ -34,24 +34,63 @@ export function ChatPane({
   onOpenSources: (messageId: string) => void
 }) {
   const [draft, setDraft] = useState("")
+  const listRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const followRef = useRef(true)
+  const pinnedAtRef = useRef(0)
   const busy = status === "submitted" || status === "streaming"
+  const lastMessage = messages.at(-1)
+  const lastText = lastMessage ? (textFromUnknownMessage(lastMessage)?.text ?? "") : ""
+  const lastSourceCount = lastMessage ? (retrievals[lastMessage.id]?.semantic.length ?? 0) : 0
+
+  useEffect(() => {
+    if (status === "submitted") followRef.current = true
+  }, [status])
+
+  useEffect(() => {
+    const list = listRef.current
+    const content = contentRef.current
+    if (!list || !content) return
+    const pin = () => {
+      if (!followRef.current) return
+      pinnedAtRef.current = performance.now()
+      list.scrollTop = list.scrollHeight
+    }
+    pin()
+    const observer = new ResizeObserver(() => {
+      pin()
+    })
+    observer.observe(content)
+    return () => observer.disconnect()
+  }, [lastText, lastSourceCount, messages.length, status, error])
 
   return (
-    <section className="flex h-full min-h-0 flex-col" aria-label="Chat">
+    <section className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden" aria-label="Chat">
       {!chatEnabled ? (
         <p
           data-testid="no-key-banner"
-          className="border-b border-border bg-highlight/40 px-4 py-3 text-sm leading-relaxed text-foreground dark:bg-highlight"
+          className="shrink-0 border-b border-border bg-highlight/40 px-4 py-3 text-sm leading-relaxed text-foreground dark:bg-highlight"
         >
           {NO_KEY_BANNER}
         </p>
       ) : null}
-      <div className="flex items-center justify-end gap-2 border-b border-border px-3 py-2">
+      <div className="flex shrink-0 items-center justify-end gap-2 border-b border-border px-3 py-2">
         <Button type="button" variant="ghost" size="sm" onClick={onNew} disabled={messages.length === 0}>
           New chat
         </Button>
       </div>
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
+      <div
+        ref={listRef}
+        data-testid="message-list"
+        className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain"
+        onScroll={(event) => {
+          if (performance.now() - pinnedAtRef.current < 80) return
+          const list = event.currentTarget
+          const gap = list.scrollHeight - list.scrollTop - list.clientHeight
+          followRef.current = gap < 48
+        }}
+      >
+        <div ref={contentRef} className="space-y-4 px-4 py-4">
         {messages.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Ask a question about the active document. Answers cite the passages they use, like [1].
@@ -63,13 +102,13 @@ export function ChatPane({
           const streaming = busy && index === messages.length - 1 && message.role === "assistant"
           if (message.role === "user") {
             return (
-              <p key={message.id} className="ml-8 text-sm font-medium">
+              <p key={message.id} className="ml-8 min-w-0 break-words text-sm font-medium">
                 {text}
               </p>
             )
           }
           return (
-            <article key={message.id} className={streaming ? "streaming-caret" : undefined}>
+            <article key={message.id} className={streaming ? "streaming-caret min-w-0 break-words" : "min-w-0 break-words"}>
               <div className="rounded-lg bg-card px-3 py-2 text-sm shadow-sm ring-1 ring-border">
                 <AnswerMarkdown text={text} hits={saved?.semantic ?? []} onCite={(n) => onCite(message.id, n)} />
               </div>
@@ -108,9 +147,11 @@ export function ChatPane({
             {error}
           </p>
         ) : null}
+        </div>
       </div>
       <form
-        className="border-t border-border p-3"
+        data-testid="chat-composer"
+        className="shrink-0 border-t border-border bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
         onSubmit={(event) => {
           event.preventDefault()
           const question = draft.trim()
@@ -137,7 +178,7 @@ export function ChatPane({
                 event.currentTarget.form?.requestSubmit()
               }
             }}
-            className="min-h-16 flex-1 resize-none rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-70"
+            className="min-h-16 min-w-0 flex-1 resize-none rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-70"
           />
           {busy ? (
             <Button type="button" variant="outline" onClick={onStop}>

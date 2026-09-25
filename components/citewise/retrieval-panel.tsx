@@ -200,9 +200,9 @@ function KeywordList({ chunks, compact = false }: { chunks: Chunk[]; compact?: b
   return (
     <ul className="mt-2 grid gap-2">
       {chunks.slice(0, 8).map((chunk) => (
-        <li key={chunk.id} className="rounded-md bg-muted px-2 py-1.5 text-sm">
+        <li key={chunk.id} className="min-w-0 rounded-md bg-muted px-2 py-1.5 text-sm">
           <ChunkLabel chunk={chunk} />
-          <p className="mt-1 line-clamp-3 font-serif leading-snug">{chunk.text}</p>
+          <p className="mt-1 line-clamp-3 break-words font-serif leading-snug">{chunk.text}</p>
         </li>
       ))}
     </ul>
@@ -272,7 +272,7 @@ function SemanticRow({
       id={`chunk-${hit.chunk.id}`}
       data-testid={lead ? "semantic-top" : undefined}
       className={cn(
-        "scroll-mt-3 rounded-lg border border-border bg-card p-2",
+        "min-w-0 scroll-mt-3 rounded-lg border border-border bg-card p-2",
         cited && "border-l-4 border-l-[#FDE68A]",
         highlighted && "ring-2 ring-primary",
         muted && "opacity-70",
@@ -292,7 +292,7 @@ function SemanticRow({
       <div className="mt-2">
         <ChunkLabel chunk={hit.chunk} />
       </div>
-      <p className={cn("mt-1 font-serif text-sm leading-snug", !open && "line-clamp-3")}>
+      <p className={cn("mt-1 break-words font-serif text-sm leading-snug", !open && "line-clamp-3")}>
         {parts.map((part, index) =>
           part.match ? (
             <mark key={index} className="rounded-sm bg-highlight px-0.5 text-inherit">
