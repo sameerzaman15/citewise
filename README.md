@@ -4,9 +4,7 @@ Ask a PDF or text file a question and get a streamed answer that cites the passa
 
 **Portfolio concept project by Sameer Zaman. Sample documents and companies are fictional.**
 
-**Live demo:** [LIVE_DEMO_URL](LIVE_DEMO_URL)
-
-<!-- TODO: replace after deploy -->
+**Live demo:** [citewise-demo.vercel.app](https://citewise-demo.vercel.app)
 
 ![Chat with citations and the retrieval panel](docs/screenshot-chat.png)
 ![Keyword vs semantic: mouse without cable](docs/screenshot-compare.png)
