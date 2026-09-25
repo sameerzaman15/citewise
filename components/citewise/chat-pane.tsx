@@ -17,6 +17,7 @@ export function ChatPane({
   error,
   retrievals,
   onSubmit,
+  onRetry,
   onStop,
   onNew,
   onCite,
@@ -27,7 +28,8 @@ export function ChatPane({
   chatEnabled: boolean
   error: string | null
   retrievals: Record<string, SavedRetrieval>
-  onSubmit: (question: string) => void
+  onSubmit: (question: string) => Promise<boolean>
+  onRetry?: () => void
   onStop: () => void
   onNew: () => void
   onCite: (messageId: string, n: number) => void
@@ -82,7 +84,7 @@ export function ChatPane({
       <div
         ref={listRef}
         data-testid="message-list"
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain"
+        className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain"
         onScroll={(event) => {
           if (performance.now() - pinnedAtRef.current < 80) return
           const list = event.currentTarget
@@ -90,7 +92,7 @@ export function ChatPane({
           followRef.current = gap < 48
         }}
       >
-        <div ref={contentRef} className="space-y-4 px-4 py-4">
+        <div ref={contentRef} className="min-w-0 space-y-4 px-4 py-4">
         {messages.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Ask a question about the active document. Answers cite the passages they use, like [1].
@@ -102,14 +104,14 @@ export function ChatPane({
           const streaming = busy && index === messages.length - 1 && message.role === "assistant"
           if (message.role === "user") {
             return (
-              <p key={message.id} className="ml-8 min-w-0 break-words text-sm font-medium">
+              <p key={message.id} className="ml-8 min-w-0 break-words text-sm font-medium [overflow-wrap:anywhere]">
                 {text}
               </p>
             )
           }
           return (
-            <article key={message.id} className={streaming ? "streaming-caret min-w-0 break-words" : "min-w-0 break-words"}>
-              <div className="rounded-lg bg-card px-3 py-2 text-sm shadow-sm ring-1 ring-border">
+            <article key={message.id} className={streaming ? "streaming-caret min-w-0" : "min-w-0"}>
+              <div className="min-w-0 break-words rounded-lg bg-card px-3 py-2 text-sm shadow-sm ring-1 ring-border [overflow-wrap:anywhere]">
                 <AnswerMarkdown text={text} hits={saved?.semantic ?? []} onCite={(n) => onCite(message.id, n)} />
               </div>
               {saved ? (
@@ -143,9 +145,14 @@ export function ChatPane({
         })}
         {status === "submitted" ? <p className="text-sm text-muted-foreground">Reading the passages…</p> : null}
         {error ? (
-          <p role="alert" className="text-sm text-destructive">
-            {error}
-          </p>
+          <div role="alert" className="flex min-w-0 flex-wrap items-center gap-2">
+            <p className="min-w-0 break-words text-sm text-destructive [overflow-wrap:anywhere]">{error}</p>
+            {onRetry ? (
+              <Button type="button" variant="outline" size="sm" onClick={onRetry} disabled={busy}>
+                Try again
+              </Button>
+            ) : null}
+          </div>
         ) : null}
         </div>
       </div>
@@ -156,14 +163,15 @@ export function ChatPane({
           event.preventDefault()
           const question = draft.trim()
           if (!question || !chatEnabled || busy) return
-          setDraft("")
-          onSubmit(question)
+          void onSubmit(question).then((ok) => {
+            if (ok) setDraft("")
+          })
         }}
       >
         <label className="sr-only" htmlFor="question">
           Question
         </label>
-        <div className="flex items-end gap-2">
+        <div className="flex min-w-0 items-end gap-2">
           <textarea
             id="question"
             data-testid="chat-input"
@@ -205,7 +213,7 @@ function SourcesRow({ saved, onCite }: { saved: SavedRetrieval; onCite: (n: numb
         <li key={hit.chunk.id}>
           <button
             type="button"
-            className="max-w-full truncate text-left text-xs text-muted-foreground hover:text-foreground"
+            className="block w-full min-w-0 whitespace-normal break-words text-left text-xs text-muted-foreground hover:text-foreground [overflow-wrap:anywhere]"
             onClick={() => onCite(index + 1)}
           >
             [{index + 1}] {hit.chunk.page ? `p. ${hit.chunk.page}` : "no page"} · {hit.chunk.text.slice(0, 80)}

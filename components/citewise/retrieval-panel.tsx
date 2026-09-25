@@ -49,11 +49,11 @@ export function RetrievalPanel({
   citedIds: Set<string>
 }) {
   return (
-    <section className="flex h-full min-h-0 flex-col" aria-label="What the AI read" data-testid="retrieval-panel">
+    <section className="flex h-full min-h-0 min-w-0 flex-col" aria-label="What the AI read" data-testid="retrieval-panel">
       <div className="flex items-start justify-between gap-2 border-b border-border px-3 py-3">
         <div className="min-w-0">
           <h2 className="font-serif text-lg">What the AI read</h2>
-          <p className="truncate text-sm text-muted-foreground">
+          <p className="break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
             {panel?.query ? panel.query : "Ask a question to see the passages."}
           </p>
         </div>
@@ -101,7 +101,7 @@ export function RetrievalPanel({
           />
         )}
       </div>
-      <footer className="border-t border-border px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground tabular-nums">
+      <footer className="break-words border-t border-border px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground tabular-nums [overflow-wrap:anywhere]">
         {panel
           ? `top-k ${panel.topK} · threshold ${panel.threshold.toFixed(2)} · ${panel.embeddingModel} · ${panel.dimensions} dims · ${Math.round(panel.latencyMs)} ms`
           : `top-k ${topK} · threshold ${threshold.toFixed(2)}`}
@@ -202,7 +202,7 @@ function KeywordList({ chunks, compact = false }: { chunks: Chunk[]; compact?: b
       {chunks.slice(0, 8).map((chunk) => (
         <li key={chunk.id} className="min-w-0 rounded-md bg-muted px-2 py-1.5 text-sm">
           <ChunkLabel chunk={chunk} />
-          <p className="mt-1 line-clamp-3 break-words font-serif leading-snug">{chunk.text}</p>
+          <p className="mt-1 line-clamp-3 break-words font-serif leading-snug [overflow-wrap:anywhere]">{chunk.text}</p>
         </li>
       ))}
     </ul>
@@ -292,7 +292,7 @@ function SemanticRow({
       <div className="mt-2">
         <ChunkLabel chunk={hit.chunk} />
       </div>
-      <p className={cn("mt-1 break-words font-serif text-sm leading-snug", !open && "line-clamp-3")}>
+      <p className={cn("mt-1 break-words font-serif text-sm leading-snug [overflow-wrap:anywhere]", !open && "line-clamp-3")}>
         {parts.map((part, index) =>
           part.match ? (
             <mark key={index} className="rounded-sm bg-highlight px-0.5 text-inherit">
